@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario Polar Breeze</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap');
+:root{
+  --bg:#07111f;--panel:#0d1e33;--border:rgba(56,182,255,0.15);
+  --cold:#38b6ff;--dark:#04090f;--accent:#ff9f1c;
+  --ok:#2ecc71;--warn:#e74c3c;--extra:#f39c12;
+  --muted:#4a6280;--text:#cde4f5;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);}
+
+nav{background:var(--dark);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;position:sticky;top:0;z-index:100;}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--cold);padding:12px 14px 12px 4px;border-right:1px solid var(--border);margin-right:6px;text-shadow:0 0 18px rgba(56,182,255,0.5);white-space:nowrap;}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.82rem;padding:14px 12px;cursor:pointer;transition:color 0.2s;letter-spacing:1px;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap;}
+.nav-btn:hover{color:var(--cold);}
+.nav-btn.active{color:var(--cold);border-bottom-color:var(--cold);}
+.nav-btn.admin-btn{margin-left:auto;color:var(--accent);}
+
+.page{display:none;padding:16px;max-width:880px;margin:0 auto;}
+.page.active{display:block;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:3px;color:var(--cold);margin-bottom:3px;}
+.page-sub{font-size:0.8rem;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+
+.meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.meta-row input{flex:1;min-width:110px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px;font-family:'Nunito',sans-serif;font-size:0.85rem;}
+.meta-row input:focus{outline:none;border-color:var(--cold);}
+
+.prod-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.prod-table th{background:rgba(56,182,255,0.1);padding:9px 8px;text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--cold);border-bottom:1px solid var(--border);}
+.prod-table td{padding:8px 8px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+.prod-table tr:hover td{background:rgba(56,182,255,0.04);}
+.code-badge{background:rgba(56,182,255,0.15);color:var(--cold);font-weight:800;font-size:0.72rem;border-radius:5px;padding:2px 7px;display:inline-block;}
+.prod-name-cell{font-weight:700;color:#e2edf5;}
+.base-qty{color:var(--muted);font-weight:700;text-align:center;}
+.base-price{color:var(--accent);font-weight:800;text-align:center;}
+.reponer-cell{color:var(--cold);font-weight:800;text-align:center;}
+
+.qty-inp{width:62px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:8px;color:#fff;text-align:center;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.92rem;padding:6px 4px;}
+.qty-inp:focus{outline:none;border-color:var(--cold);}
+
+.res-ok{color:var(--ok);font-weight:800;}
+.res-warn{color:var(--warn);font-weight:800;}
+.res-extra{color:var(--extra);font-weight:800;}
+.res-money{color:var(--accent);font-weight:800;}
+
+.btn-row{display:flex;gap:10px;margin:16px 0 10px;flex-wrap:wrap;}
+.btn{flex:1;padding:13px 10px;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;cursor:pointer;transition:transform 0.1s;}
+.btn:active{transform:scale(0.97);}
+.btn-blue{background:var(--cold);color:var(--dark);}
+.btn-red{background:var(--warn);color:#fff;}
+.btn-green{background:var(--ok);color:var(--dark);}
+.btn-orange{background:var(--accent);color:var(--dark);}
+
+.live-bar{background:linear-gradient(135deg,#5c3a00,#f39c12);border-radius:14px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.live-bar .lbl{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;opacity:0.9;}
+.live-bar .num{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;}
+
+/* info banner */
+.info-banner{border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:10px;}
+.info-ok{background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);color:var(--ok);}
+.info-warn{background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);color:var(--warn);}
+.info-blue{background:rgba(56,182,255,0.12);border:1px solid rgba(56,182,255,0.25);color:var(--cold);}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0;}
+.sum-card{border-radius:12px;padding:14px 10px;text-align:center;}
+.sum-card .snum{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;line-height:1;}
+.sum-card .slbl{font-size:0.66rem;font-weight:700;opacity:0.8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.sc-blue{background:linear-gradient(135deg,#0e3a5c,#1a7ab5);}
+.sc-green{background:linear-gradient(135deg,#145229,#2ecc71);}
+.sc-red{background:linear-gradient(135deg,#5c1515,#e74c3c);}
+.sc-orange{background:linear-gradient(135deg,#5c3a00,#f39c12);}
+.results-section{margin-top:16px;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px 24px;width:90%;max-width:340px;text-align:center;}
+.modal-box h2{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--cold);letter-spacing:2px;margin-bottom:6px;}
+.modal-box p{font-size:0.82rem;color:var(--muted);margin-bottom:18px;}
+.modal-box input{width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:#fff;padding:11px 14px;font-family:'Nunito',sans-serif;font-size:1rem;text-align:center;letter-spacing:5px;margin-bottom:12px;}
+.modal-box input:focus{outline:none;border-color:var(--cold);}
+.modal-error{color:var(--warn);font-size:0.8rem;margin-bottom:10px;min-height:18px;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;padding:11px;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:1px;cursor:pointer;}
+.mb-ok{background:var(--cold);color:var(--dark);}
+.mb-cancel{background:rgba(255,255,255,0.08);color:var(--muted);}
+
+#adminPage .admin-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:10px;}
+#adminPage .admin-table th{background:rgba(255,159,28,0.15);padding:9px 8px;text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);border-bottom:1px solid rgba(255,159,28,0.2);}
+#adminPage .admin-table td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+.adm-inp{background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:7px;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.85rem;padding:5px 8px;width:100%;}
+.adm-inp:focus{outline:none;border-color:var(--accent);}
+.adm-inp.name-inp{min-width:180px;}
+.adm-inp.num-inp{width:68px;text-align:center;}
+.del-btn{background:rgba(231,76,60,0.15);border:none;color:var(--warn);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.88rem;font-weight:700;}
+.del-btn:hover{background:rgba(231,76,60,0.3);}
+.add-row-btn{margin-top:14px;background:rgba(255,159,28,0.12);border:1px dashed rgba(255,159,28,0.4);color:var(--accent);border-radius:10px;padding:11px;width:100%;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;cursor:pointer;}
+.save-admin-btn{margin-top:10px;background:var(--accent);color:var(--dark);border:none;border-radius:12px;padding:13px;width:100%;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;cursor:pointer;}
+
+@media print{
+  nav,.btn-row,.qty-inp,.meta-row,.live-bar,.info-banner{display:none!important;}
+  body{background:white;color:black;}
+  .page{display:block!important;padding:0;}
+  #adminPage{display:none!important;}
+  .prod-table th{background:#eee;color:#000;}
+  .sum-card{border:1px solid #ccc;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🧊 POLAR</div>
+  <button class="nav-btn active" onclick="showPage('ventasPage',this)">🌙 Ventas</button>
+  <button class="nav-btn"        onclick="showPage('recibidoPage',this)">🚚 Recibido</button>
+  <button class="nav-btn admin-btn" onclick="openAdminModal()">⚙️ Admin</button>
+</nav>
+
+<!-- ========== VENTAS ========== -->
+<div class="page active" id="ventasPage">
+  <div class="page-title">🌙 VENTAS</div>
+  <div class="page-sub">Al llegar en la tarde/noche, pon cuánto te QUEDÓ de cada producto. La app calcula lo que vendiste, el dinero, y guarda automáticamente lo que el camión te debe traer mañana.</div>
+
+  <div class="meta-row">
+    <input type="text" id="v_vendedor" placeholder="Vendedor #"/>
+    <input type="text" id="v_guagua"   placeholder="Guagua #"/>
+    <input type="date" id="v_fecha"/>
+  </div>
+
+  <div class="live-bar">
+    <div class="lbl">💰 TOTAL VENDIDO EN DINERO</div>
+    <div class="num" id="liveTotalDinero">RD$ 0</div>
+  </div>
+
+  <table class="prod-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Producto</th>
+        <th style="text-align:center">Base</th>
+        <th style="text-align:center">Precio</th>
+        <th style="text-align:center">Me quedó</th>
+        <th style="text-align:center">Vendí</th>
+        <th style="text-align:center">💰 Dinero</th>
+        <th style="text-align:center">🚚 A reponer</th>
+      </tr>
+    </thead>
+    <tbody id="ventasBody"></tbody>
+  </table>
+
+  <div class="btn-row">
+    <button class="btn btn-orange" onclick="guardarVentas()">💾 GUARDAR Y CERRAR DÍA</button>
+    <button class="btn btn-blue"   onclick="calcVentas()">⚡ VER RESUMEN</button>
+    <button class="btn btn-red"    onclick="limpiar('ventas')">🗑 LIMPIAR</button>
+    <button class="btn btn-green"  onclick="window.print()">🖨 IMPRIMIR</button>
+  </div>
+
+  <div class="results-section" id="ventasResults" style="display:none">
+    <div class="summary-grid">
+      <div class="sum-card sc-blue"><div class="snum" id="sv_total">0</div><div class="slbl">Unidades Vendidas</div></div>
+      <div class="sum-card sc-green"><div class="snum" id="sv_cuadran">0</div><div class="slbl">Cuadran</div></div>
+      <div class="sum-card sc-red"><div class="snum" id="sv_prob">0</div><div class="slbl">Con Problema</div></div>
+      <div class="sum-card sc-orange"><div class="snum" id="sv_dinero">RD$0</div><div class="slbl">Total Dinero</div></div>
+    </div>
+    <table class="prod-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Producto</th>
+          <th style="text-align:center">Base</th>
+          <th style="text-align:center">Me quedó</th>
+          <th style="text-align:center">Vendí</th>
+          <th style="text-align:center">Estado</th>
+          <th style="text-align:center">💰 Dinero</th>
+          <th style="text-align:center">🚚 A reponer</th>
+        </tr>
+      </thead>
+      <tbody id="ventasResBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========== RECIBIDO ========== -->
+<div class="page" id="recibidoPage">
+  <div class="page-title">🚚 RECIBIDO</div>
+  <div class="page-sub">En la mañana, pon lo que el camión te trajo. La app compara con lo que se guardó anoche y te dice si está exacto, falta o sobra.</div>
+
+  <div class="meta-row">
+    <input type="text" id="rb_vendedor" placeholder="Vendedor #"/>
+    <input type="text" id="rb_guagua"   placeholder="Guagua #"/>
+    <input type="date" id="rb_fecha"/>
+  </div>
+
+  <div id="recibidoBanner" class="info-banner info-blue">ℹ️ Carga primero las ventas de anoche para ver lo que te deben reponer.</div>
+
+  <table class="prod-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Producto</th>
+        <th style="text-align:center">Debían traer</th>
+        <th style="text-align:center">Me trajeron</th>
+        <th style="text-align:center">Diferencia</th>
+        <th style="text-align:center">Estado</th>
+      </tr>
+    </thead>
+    <tbody id="recibidoBody"></tbody>
+  </table>
+
+  <div class="btn-row">
+    <button class="btn btn-blue"  onclick="calcRecibido()">⚡ CALCULAR</button>
+    <button class="btn btn-red"   onclick="limpiar('recibido')">🗑 LIMPIAR</button>
+    <button class="btn btn-green" onclick="window.print()">🖨 IMPRIMIR</button>
+  </div>
+
+  <div class="results-section" id="recibidoResults" style="display:none">
+    <div class="summary-grid">
+      <div class="sum-card sc-blue"><div class="snum" id="srb_total">0</div><div class="slbl">Total Recibido</div></div>
+      <div class="sum-card sc-green"><div class="snum" id="srb_exacto">0</div><div class="slbl">Exactos</div></div>
+      <div class="sum-card sc-red"><div class="snum" id="srb_dif">0</div><div class="slbl">Con Diferencia</div></div>
+    </div>
+    <table class="prod-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Producto</th>
+          <th style="text-align:center">Debían traer</th>
+          <th style="text-align:center">Me trajeron</th>
+          <th style="text-align:center">Diferencia</th>
+          <th style="text-align:center">Estado</th>
+        </tr>
+      </thead>
+      <tbody id="recibidoResBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========== ADMIN ========== -->
+<div class="page" id="adminPage">
+  <div class="page-title" style="color:var(--accent)">⚙️ ADMINISTRADOR</div>
+  <div class="page-sub">Modifica productos, cantidades base y precios. Presiona GUARDAR al terminar.</div>
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th style="width:50px">#</th>
+        <th>Nombre del Producto</th>
+        <th style="width:78px;text-align:center">Base</th>
+        <th style="width:90px;text-align:center">Precio RD$</th>
+        <th style="width:44px"></th>
+      </tr>
+    </thead>
+    <tbody id="adminBody"></tbody>
+  </table>
+  <button class="add-row-btn" onclick="addAdminRow()">+ AGREGAR PRODUCTO</button>
+  <button class="save-admin-btn" onclick="saveAdmin()">💾 GUARDAR CAMBIOS</button>
+</div>
+
+<!-- MODAL CONTRASEÑA -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal-box">
+    <h2>🔐 ADMIN</h2>
+    <p>Ingresa la contraseña para acceder</p>
+    <input type="password" id="pwInput" placeholder="••••••" onkeydown="if(event.key==='Enter')checkPw()"/>
+    <div class="modal-error" id="pwError"></div>
+    <div class="modal-btns">
+      <button class="mb-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="mb-ok"     onclick="checkPw()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PASS = "polar2024";
+
+let productos = [
+  {cod:1, nom:"PALETA CHOCO MANI 32/1",          base:20, precio:90 },
+  {cod:2, nom:"PALETA CHOCO CREMA 32/1",         base:0,  precio:90 },
+  {cod:3, nom:"PALETA CHOCO CHOCO 32/1",         base:10, precio:90 },
+  {cod:4, nom:"PALETA DE FRAMBUESA",             base:0,  precio:0  },
+  {cod:6, nom:"PALETA DE UVA",                   base:0,  precio:0  },
+  {cod:7, nom:"PALETA DE COCO NATURAL",          base:12, precio:85 },
+  {cod:8, nom:"PALETA NATURAL DE FRESA 24/1",    base:0,  precio:0  },
+  {cod:9, nom:"PALETA DE CHINOLA NATURAL",       base:0,  precio:0  },
+  {cod:10,nom:"PALETA FUDGE BAR BIZCOCHO 24/1",  base:24, precio:55 },
+  {cod:11,nom:"PALETA FUDGE CHOCOLATE 24/1",     base:17, precio:55 },
+  {cod:12,nom:"COPA BON FRESA",                  base:0,  precio:0  },
+  {cod:13,nom:"PALETA CHINOLA CREMA 24/1",       base:10, precio:85 },
+  {cod:14,nom:"PALETA FRESA CREMA 24/1",         base:5,  precio:85 },
+  {cod:16,nom:"PALETA CHOCO DULCE DE LECHE",     base:6,  precio:90 },
+  {cod:17,nom:"PALETAS BONICE 24/1",             base:19, precio:50 },
+  {cod:18,nom:"CAJITA DE FRESA 3.5oz",           base:6,  precio:80 },
+  {cod:19,nom:"CAJITA DE CHOCOLATE 3.5oz",       base:4,  precio:80 },
+  {cod:20,nom:"CAJITA DE VAINILLA 3.5oz",        base:4,  precio:80 },
+  {cod:21,nom:"COPA BON CON GALLETA",            base:0,  precio:0  },
+  {cod:22,nom:"COPA BON CHIP CHOCOLATE",         base:0,  precio:0  },
+  {cod:24,nom:"MORDISCO CLASICO",                base:0,  precio:0  },
+  {cod:25,nom:"SANDWICH BON VAINILLA 24/1",      base:12, precio:110},
+  {cod:26,nom:"MAGNUM ALMENDRAS",                base:0,  precio:0  },
+  {cod:27,nom:"MAGNUM CLASICO",                  base:0,  precio:0  },
+  {cod:30,nom:"PINTA UNO DE CHOCOLATE",          base:0,  precio:0  },
+  {cod:31,nom:"PINTA UNO DE BIZCOCHO",           base:0,  precio:0  },
+  {cod:32,nom:"PINTA UNO DE FRESA",              base:0,  precio:0  },
+  {cod:34,nom:"PINTA UNO DE VAINILLA",           base:0,  precio:0  },
+  {cod:35,nom:"PINTA UNO DE RON PASA",           base:0,  precio:0  },
+  {cod:42,nom:"PINTA MERENGUE QUISQUEYA",        base:0,  precio:0  },
+  {cod:48,nom:"PALETA NATURAL DE MANGO",         base:0,  precio:0  },
+  {cod:53,nom:"PALETA DE MANZANA",               base:0,  precio:0  },
+  {cod:54,nom:"PALETA DE CHERRY",                base:0,  precio:0  },
+  {cod:63,nom:"PINTA UNO 0% AZUCAR VAINILLA",    base:0,  precio:0  },
+  {cod:65,nom:"MAGNUN BLANCAS",                  base:0,  precio:0  },
+  {cod:66,nom:"PALETA CHOCO CREMA DON ALFONSO",  base:0,  precio:0  },
+  {cod:67,nom:"PINTA UNO DON ALFONSO",           base:0,  precio:0  },
+  {cod:69,nom:"PALETA TOSH MORA AZUL",           base:0,  precio:0  },
+  {cod:70,nom:"PALETA TOSH PIÑA 16/1",           base:0,  precio:0  },
+];
+
+// pedidoGuardado = lo que el camión debe traer mañana (guardado desde Ventas)
+let pedidoGuardado = {}; // { cod: cantidad_a_reponer }
+
+function loadData(){
+  const s = localStorage.getItem('polar_prod'); if(s) productos = JSON.parse(s);
+  const p = localStorage.getItem('polar_pedido'); if(p) pedidoGuardado = JSON.parse(p);
+}
+function saveData(){ localStorage.setItem('polar_prod', JSON.stringify(productos)); }
+function savePedido(){ localStorage.setItem('polar_pedido', JSON.stringify(pedidoGuardado)); }
+function clearPedido(){ pedidoGuardado={}; localStorage.removeItem('polar_pedido'); }
+loadData();
+
+['rb_fecha','v_fecha'].forEach(id => document.getElementById(id).valueAsDate = new Date());
+
+// ===== RENDER VENTAS =====
+function renderVentas(){
+  const tb = document.getElementById('ventasBody'); tb.innerHTML='';
+  productos.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="code-badge">${p.cod}</span></td>
+      <td class="prod-name-cell">${p.nom}</td>
+      <td class="base-qty">${p.base}</td>
+      <td class="base-price">${p.precio>0?'RD$'+p.precio:'—'}</td>
+      <td><input class="qty-inp" type="number" min="0" id="vv_${p.cod}" placeholder="—" oninput="liveCalc(${p.cod},${p.base},${p.precio})"/></td>
+      <td id="vvend_${p.cod}" style="text-align:center;font-weight:800;">—</td>
+      <td id="vdine_${p.cod}" style="text-align:center;font-weight:800;">—</td>
+      <td id="vrep_${p.cod}"  class="reponer-cell">—</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ===== RENDER RECIBIDO =====
+function renderRecibido(){
+  const tb = document.getElementById('recibidoBody'); tb.innerHTML='';
+  const tienePedido = Object.keys(pedidoGuardado).length > 0;
+
+  // update banner
+  const banner = document.getElementById('recibidoBanner');
+  if(tienePedido){
+    banner.className='info-banner info-ok';
+    banner.textContent='✅ Pedido de anoche cargado. Pon lo que el camión te trajo de cada producto.';
+  } else {
+    banner.className='info-banner info-warn';
+    banner.textContent='⚠️ No hay pedido guardado. Ve a Ventas, llena los datos y presiona GUARDAR Y CERRAR DÍA.';
+  }
+
+  productos.forEach(p => {
+    const debenTraer = pedidoGuardado[p.cod] !== undefined ? pedidoGuardado[p.cod] : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="code-badge">${p.cod}</span></td>
+      <td class="prod-name-cell">${p.nom}</td>
+      <td class="reponer-cell">${debenTraer}</td>
+      <td><input class="qty-inp" type="number" min="0" id="rb_${p.cod}" placeholder="—"/></td>
+      <td id="rbdif_${p.cod}" style="text-align:center;font-weight:800;">—</td>
+      <td id="rbest_${p.cod}" style="text-align:center;">—</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ===== RENDER ADMIN =====
+function renderAdmin(){
+  const tb = document.getElementById('adminBody'); tb.innerHTML='';
+  productos.forEach((p,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="adm-inp num-inp" type="number" value="${p.cod}" id="ac_${i}"/></td>
+      <td><input class="adm-inp name-inp" type="text" value="${p.nom}" id="an_${i}"/></td>
+      <td><input class="adm-inp num-inp" type="number" value="${p.base}" id="ab_${i}"/></td>
+      <td><input class="adm-inp num-inp" type="number" value="${p.precio}" id="ap_${i}"/></td>
+      <td><button class="del-btn" onclick="delRow(${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ===== LIVE CALC VENTAS =====
+function liveCalc(cod, base, precio){
+  const val = document.getElementById(`vv_${cod}`).value.trim();
+  if(val===''){
+    document.getElementById(`vvend_${cod}`).innerHTML='—';
+    document.getElementById(`vdine_${cod}`).innerHTML='—';
+    document.getElementById(`vrep_${cod}`).innerHTML='—';
+  } else {
+    const queda  = parseInt(val)||0;
+    const vendi  = base - queda;
+    const reponer = Math.max(vendi, 0);
+    const dinero = reponer * precio;
+    const cls = vendi<0 ? 'res-warn' : 'res-ok';
+    document.getElementById(`vvend_${cod}`).innerHTML = `<span class="${cls}">${vendi<0?'⚠️ +'+Math.abs(vendi)+' EXTRA':vendi}</span>`;
+    document.getElementById(`vdine_${cod}`).innerHTML = `<span class="res-money">${precio>0?'RD$'+dinero.toLocaleString():'—'}</span>`;
+    document.getElementById(`vrep_${cod}`).innerHTML  = `<span style="color:var(--cold);font-weight:800;">${reponer}</span>`;
+  }
+  // live total
+  let total=0;
+  productos.forEach(p=>{
+    const i=document.getElementById(`vv_${p.cod}`);
+    if(!i||i.value.trim()==='') return;
+    const v=p.base-(parseInt(i.value)||0);
+    if(v>0&&p.precio>0) total+=v*p.precio;
+  });
+  document.getElementById('liveTotalDinero').textContent='RD$ '+total.toLocaleString();
+}
+
+// ===== GUARDAR VENTAS (cierre del día) =====
+function guardarVentas(){
+  let hayDatos = false;
+  productos.forEach(p=>{
+    const inp=document.getElementById(`vv_${p.cod}`);
+    if(inp&&inp.value.trim()!=='') hayDatos=true;
+  });
+  if(!hayDatos){ alert('Llena al menos un producto antes de guardar.'); return; }
+  if(!confirm('¿Confirmas cerrar el día y guardar el pedido para mañana?\n\nEsto le dirá al apartado RECIBIDO cuánto debe llegar mañana.')) return;
+
+  pedidoGuardado = {};
+  productos.forEach(p=>{
+    const inp=document.getElementById(`vv_${p.cod}`);
+    if(!inp||inp.value.trim()==='') return;
+    const queda=parseInt(inp.value)||0;
+    const vendi=p.base-queda;
+    pedidoGuardado[p.cod] = Math.max(vendi,0);
+  });
+  savePedido();
+  alert('✅ ¡Día cerrado! Mañana en RECIBIDO verás lo que el camión debe traerte.');
+}
+
+// ===== CALC VENTAS (resumen) =====
+function calcVentas(){
+  const rows=[]; let totU=0,totD=0,cu=0,pr=0;
+  productos.forEach(p=>{
+    const inp=document.getElementById(`vv_${p.cod}`);
+    if(!inp||inp.value.trim()==='') return;
+    const queda=parseInt(inp.value)||0;
+    const vendi=p.base-queda;
+    const dinero=Math.max(vendi,0)*p.precio;
+    const reponer=Math.max(vendi,0);
+    totU+=reponer; totD+=dinero;
+    let est,cls;
+    if(vendi<0){est=`⚠️ EXTRA ${Math.abs(vendi)}`;cls='res-warn';pr++;}
+    else if(vendi===p.base&&queda===0){est='TODO VENDIDO ✓';cls='res-ok';cu++;}
+    else{est=`VENDÍ ${vendi}`;cls='res-ok';cu++;}
+    rows.push({p,vendi,queda,dinero,reponer,est,cls});
+  });
+  if(!rows.length){alert('Llena al menos un producto.');return;}
+  document.getElementById('sv_total').textContent=totU;
+  document.getElementById('sv_cuadran').textContent=cu;
+  document.getElementById('sv_prob').textContent=pr;
+  document.getElementById('sv_dinero').textContent='RD$'+totD.toLocaleString();
+  const tb=document.getElementById('ventasResBody'); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="code-badge">${r.p.cod}</span></td>
+      <td class="prod-name-cell">${r.p.nom}</td>
+      <td class="base-qty">${r.p.base}</td>
+      <td style="text-align:center;font-weight:800;">${r.queda}</td>
+      <td style="text-align:center;font-weight:800;" class="${r.cls}">${r.vendi>=0?r.vendi:'⚠️ '+Math.abs(r.vendi)+' extra'}</td>
+      <td style="text-align:center;"><span class="${r.cls}">${r.est}</span></td>
+      <td style="text-align:center;" class="res-money">${r.p.precio>0?'RD$'+r.dinero.toLocaleString():'—'}</td>
+      <td class="reponer-cell">${r.reponer}</td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('ventasResults').style.display='block';
+  document.getElementById('ventasResults').scrollIntoView({behavior:'smooth'});
+}
+
+// ===== CALC RECIBIDO =====
+function calcRecibido(){
+  const rows=[]; let tot=0,ex=0,di=0;
+  productos.forEach(p=>{
+    const inp=document.getElementById(`rb_${p.cod}`);
+    if(!inp||inp.value.trim()==='') return;
+    const trajeron=parseInt(inp.value)||0;
+    const debenTraer = pedidoGuardado[p.cod] !== undefined ? pedidoGuardado[p.cod] : null;
+    tot+=trajeron;
+    let dif,est,cls;
+    if(debenTraer===null){
+      // sin pedido guardado, compara contra base
+      dif=trajeron-p.base;
+    } else {
+      dif=trajeron-debenTraer;
+    }
+    if(dif===0){est='EXACTO ✓';cls='res-ok';ex++;}
+    else if(dif>0){est=`EXTRA +${dif}`;cls='res-extra';di++;}
+    else{est=`FALTAN ${Math.abs(dif)}`;cls='res-warn';di++;}
+    document.getElementById(`rbdif_${p.cod}`).innerHTML=`<span class="${cls}">${dif>=0?'+'+dif:dif}</span>`;
+    document.getElementById(`rbest_${p.cod}`).innerHTML=`<span class="${cls}">${est}</span>`;
+    rows.push({p,trajeron,debenTraer,dif,est,cls});
+  });
+  if(!rows.length){alert('Llena al menos un producto.');return;}
+  document.getElementById('srb_total').textContent=tot;
+  document.getElementById('srb_exacto').textContent=ex;
+  document.getElementById('srb_dif').textContent=di;
+  const tb=document.getElementById('recibidoResBody'); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    const deb = r.debenTraer!==null ? r.debenTraer : '—';
+    tr.innerHTML=`
+      <td><span class="code-badge">${r.p.cod}</span></td>
+      <td class="prod-name-cell">${r.p.nom}</td>
+      <td class="reponer-cell">${deb}</td>
+      <td style="text-align:center;font-weight:800;">${r.trajeron}</td>
+      <td style="text-align:center;" class="${r.cls}">${r.dif>=0?'+'+r.dif:r.dif}</td>
+      <td style="text-align:center;"><span class="${r.cls}">${r.est}</span></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('recibidoResults').style.display='block';
+  document.getElementById('recibidoResults').scrollIntoView({behavior:'smooth'});
+  // clear pedido after confirming receipt
+  if(Object.keys(pedidoGuardado).length>0){
+    setTimeout(()=>{
+      if(confirm('¿Confirmas que ya verificaste lo recibido?\n\nSe borrará el pedido guardado para empezar el día limpio.')){
+        clearPedido();
+        renderRecibido();
+      }
+    }, 500);
+  }
+}
+
+// ===== LIMPIAR =====
+function limpiar(sec){
+  const nombres={ventas:'Ventas',recibido:'Recibido'};
+  if(!confirm(`¿Seguro que quieres borrar todos los datos de ${nombres[sec]}?\n\nEsto no se puede deshacer.`)) return;
+  if(sec==='ventas'){
+    productos.forEach(p=>{
+      const i=document.getElementById(`vv_${p.cod}`); if(i) i.value='';
+      ['vvend_','vdine_','vrep_'].forEach(pref=>{const el=document.getElementById(pref+p.cod);if(el)el.innerHTML='—';});
+    });
+    document.getElementById('liveTotalDinero').textContent='RD$ 0';
+    document.getElementById('ventasResults').style.display='none';
+  }
+  if(sec==='recibido'){
+    productos.forEach(p=>{
+      const i=document.getElementById(`rb_${p.cod}`); if(i) i.value='';
+      ['rbdif_','rbest_'].forEach(pref=>{const el=document.getElementById(pref+p.cod);if(el)el.innerHTML='—';});
+    });
+    document.getElementById('recibidoResults').style.display='none';
+  }
+}
+
+// ===== ADMIN =====
+function addAdminRow(){ productos.push({cod:Date.now()%10000,nom:'NUEVO PRODUCTO',base:0,precio:0}); renderAdmin(); }
+function delRow(i){ if(!confirm('¿Eliminar este producto?')) return; productos.splice(i,1); renderAdmin(); }
+function saveAdmin(){
+  const n=productos.length; const nl=[];
+  for(let i=0;i<n;i++){
+    const cod=parseInt(document.getElementById(`ac_${i}`)?.value)||i+1;
+    const nom=document.getElementById(`an_${i}`)?.value.trim()||'';
+    const base=parseInt(document.getElementById(`ab_${i}`)?.value)||0;
+    const precio=parseFloat(document.getElementById(`ap_${i}`)?.value)||0;
+    if(nom) nl.push({cod,nom,base,precio});
+  }
+  productos=nl; saveData(); renderVentas(); renderRecibido();
+  alert('✅ ¡Cambios guardados!');
+}
+
+// ===== MODAL =====
+function openAdminModal(){ document.getElementById('pwInput').value=''; document.getElementById('pwError').textContent=''; document.getElementById('pwModal').classList.add('open'); setTimeout(()=>document.getElementById('pwInput').focus(),100); }
+function closeModal(){ document.getElementById('pwModal').classList.remove('open'); }
+function checkPw(){
+  const saved=localStorage.getItem('polar_pass')||DEFAULT_PASS;
+  if(document.getElementById('pwInput').value===saved){ closeModal(); showPage('adminPage',null); renderAdmin(); }
+  else{ document.getElementById('pwError').textContent='❌ Contraseña incorrecta'; document.getElementById('pwInput').value=''; }
+}
+
+// ===== NAV =====
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='recibidoPage') renderRecibido();
+}
+
+// Init
+renderVentas(); renderRecibido();
+</script>
+</body>
+</html>
